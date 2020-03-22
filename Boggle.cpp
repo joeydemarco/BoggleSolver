@@ -38,7 +38,7 @@ public:
 	// sets all adjacent dice to the adjacent vector
 	void addAdjacent(
 		// index to be added
-		c_boggle_index i)
+		c_boggle_index &i)
 	{
 		adjacent.push_back(i);
 	}
@@ -53,18 +53,6 @@ public:
 		printf("\n");
 	}
 
-	bool findInDict(int low, int mid, int high, string word, std::vector<std::string> &dict)
-	{
-		if(low == high)
-			return false;
-		if(word == dict[mid])
-			return true;
-		else if(word < dict[mid])
-			findInDict(low, (low+mid)/2, mid, word, dict);
-		else
-			findInDict(mid, (mid+high)/2, high, word, dict);
-	}
-
 	void findWord(
 		// the word containing previous letters used, initialized at ""
 		string word, 
@@ -73,24 +61,32 @@ public:
 		// the nodes/dice already used to create the current word (as to not repeat)
 		unordered_set<int> diceUsed,
 		// the dictionary of all valid words
-		std::vector<std::string> &dict)
+		unordered_set<std::string> &dict)
 	{
-		printf("%c\n", c);
 		// ensures we do no reuse dice
-		if(diceUsed.find(id) != diceUsed.end()) return;
+		if(diceUsed.find(id) != diceUsed.end()) 
+		{
+			//cout << word << "\t" << c << " END"<< endl;
+			return;
+		}
 		// if the die is unused, try adding it to form a word
 		word.push_back(c);
-		if(findInDict(0, dict.size()/2, dict.size(), word, dict))
+		//cout << word << endl;
+		unordered_set<string>::iterator it = dict.find(word);
+		if(it != dict.end())
 		{
 			wordsFound.insert(word);
+			cout << word << "\t" << *it << endl;
 		}
 
+		//printAdjacent();
 
 		//after finding a word or  but possibility of a subsequent words, we continue
 		diceUsed.insert(id);
-		for(c_boggle_index n : adjacent)
+		for(unsigned int i = 0; i < adjacent.size(); i++)
 		{
-			n.findWord(word, wordsFound, diceUsed, dict);
+			//cout << word << " + " << adjacent[i].getLetter() << endl;
+			adjacent[i].findWord(word, wordsFound, diceUsed, dict);
 		}
 	}
 	ppp
@@ -104,7 +100,7 @@ class c_boggle
 {
 private:
 	// dictionary of all words
-	std::vector<std::string> dict;
+	std::unordered_set<std::string> dict;
 	// vector of boggle board
 	vector< vector<c_boggle_index> > bl;
 
@@ -163,7 +159,7 @@ public:
 				//printf("5\n");
 				if(i-1 >= 0 && j-1 >= 0)			bl[i][j].addAdjacent(bl[(i-1)][(j-1)]);
 				//printf("6\n");
-				if(i+1 < board_width && j-1 >= 0)		bl[i][j].addAdjacent(bl[(i+1)][(j-1)]);
+				if(i+1 < board_width && j-1 >= 0)	bl[i][j].addAdjacent(bl[(i+1)][(j-1)]);
 				//printf("7\n");
 				if(j+1 < board_height && i-1 >= 0)	bl[i][j].addAdjacent(bl[(i-1)][(j+1)]);
 				//printf("8\n");
@@ -187,7 +183,7 @@ public:
 		// the legal words, alphabetically-sorted
 		const std::vector<std::string> &all_words)
 	{
-		dict = all_words;
+		copy(all_words.begin(), all_words.end(), inserter(dict, dict.end()));\
 	}
 
 	// find all words on the specified board
@@ -221,7 +217,11 @@ public:
 				bl[i][j].findWord(s, wordsFound, diceUsed, dict);
 			}
 		}
-		
+
+		//sort(wordsFound.begin(), wordsFound.end());
+		//for (string s : wordsFound)
+			//cout << s << endl;
+
 
 
 		return vector<string>();
