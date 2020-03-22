@@ -89,7 +89,6 @@ public:
 			adjacent[i].findWord(word, wordsFound, diceUsed, dict);
 		}
 	}
-	ppp
 	
 
 
