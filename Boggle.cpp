@@ -9,172 +9,28 @@
 #include <bits/stdc++.h> 
 using namespace std;
 
-class c_boggle_index
-{
-private:
-	// the letter that represents the current node/letter on the boggle board
-	char c;
-	// uniquely idenifies the node in an unordered list for fast look-up times
-	int id;
-	// adajcent boggle indexes are numbered from top left to bottom right, as depicted below
-	vector<c_boggle_index> adjacent;
-
-public:
-	c_boggle_index(
-		// the letter represented on the boggle index/"die"
-		char _c,
-		// used to identify which nodes have been used (letters can repeat)
-		int _id)
-	{
-		c = _c;
-		id = _id;
-	}
-
-	// returns the letter stored by the node index
-	char getLetter() { return c; }
-	// returns the id stored by the node index
-	char getId() { return id; }
-
-	// sets all adjacent dice to the adjacent vector
-	void addAdjacent(
-		// index to be added
-		c_boggle_index &i)
-	{
-		adjacent.push_back(i);
-	}
-
-	void printAdjacent()
-	{
-		printf("%c: ", c);
-		for(unsigned int i = 0; i < adjacent.size(); i++)
-		{
-			printf("%c, ", adjacent[i].getLetter());
-		}
-		printf("\n");
-	}
-
-	void findWord(
-		// the word containing previous letters used, initialized at ""
-		string word, 
-		// the set of words already found
-		unordered_set<string> &wordsFound,
-		// the nodes/dice already used to create the current word (as to not repeat)
-		unordered_set<int> diceUsed,
-		// the dictionary of all valid words
-		unordered_set<std::string> &dict)
-	{
-		// ensures we do no reuse dice
-		if(diceUsed.find(id) != diceUsed.end()) 
-		{
-			//cout << word << "\t" << c << " END"<< endl;
-			return;
-		}
-		// if the die is unused, try adding it to form a word
-		word.push_back(c);
-		//cout << word << endl;
-		unordered_set<string>::iterator it = dict.find(word);
-		if(it != dict.end())
-		{
-			wordsFound.insert(word);
-			cout << word << "\t" << *it << endl;
-		}
-
-		//printAdjacent();
-
-		//after finding a word or  but possibility of a subsequent words, we continue
-		diceUsed.insert(id);
-		for(unsigned int i = 0; i < adjacent.size(); i++)
-		{
-			//cout << word << " + " << adjacent[i].getLetter() << endl;
-			adjacent[i].findWord(word, wordsFound, diceUsed, dict);
-		}
-	}
-	
-
-
-};
-
 
 class c_boggle
 {
 private:
 	// dictionary of all words
-	std::unordered_set<std::string> dict;
-	// vector of boggle board
-	vector< vector<c_boggle_index> > bl;
+	vector<string> dict;
+	// width of the board
+	int board_width;
+	// height of the board
+	int board_height;
+	// boggle board
+	
 
 public:
 	// checks to make sure the buffer only consists of alphabet characters
 	bool checkAlpha(const char * buffer, int len){
-		//try{
 		  	for(int i = 0; i < len; i++){
 		    	if(!isalpha(buffer[i])){
 		      		return false;
 		    	}
 		  	}
 		  	return true;
-
-	}
-
-	// sets up the board by initializing all indexes with adjacent indexes
-	void initializeBoard(
-		// width of the board
-		int board_width,
-		// height of the board
-		int board_height,
-		// board width*height characters in row major order
-		const char *board_letters)
-	{
-		// sets up all letters as a node in the boggle board (c_boggle_index)
-		int count = 0;
-		for(int i = 0; i < board_width; i++)
-		{
-			// makes a board letter saver to assemble the board one row at a time
-			vector<c_boggle_index> bls;
-			for(int j = 0; j < board_height; j++)
-			{
-				c_boggle_index w(board_letters[count], count);
-				bls.push_back(w);
-				count++;
-			}
-			bl.push_back(bls);
-		} 
-
-		// connects the boggle nodes through adajcent nodes, as words can only be made with
-		// adajent dice
-		for(int i = 0; i < board_width; i++)
-		{
-			for(int j = 0; j < board_height; j++)
-			{
-				printf("%c\n", bl[i][j].getLetter());	
-				//printf("1\n");			
-				if(i-1 >= 0)						bl[i][j].addAdjacent(bl[(i-1)][j]);
-				//printf("2\n");	
-				if(i+1 < board_width)	 			bl[i][j].addAdjacent(bl[(i+1)][j]);
-				//printf("3\n");	
-				if(j-1 >= 0)						bl[i][j].addAdjacent(bl[i][(j-1)]);
-				//printf("4\n");	
-				if(j+1 < board_height)				bl[i][j].addAdjacent(bl[i][(j+1)]);
-				//printf("5\n");
-				if(i-1 >= 0 && j-1 >= 0)			bl[i][j].addAdjacent(bl[(i-1)][(j-1)]);
-				//printf("6\n");
-				if(i+1 < board_width && j-1 >= 0)	bl[i][j].addAdjacent(bl[(i+1)][(j-1)]);
-				//printf("7\n");
-				if(j+1 < board_height && i-1 >= 0)	bl[i][j].addAdjacent(bl[(i-1)][(j+1)]);
-				//printf("8\n");
-				if(i+1 < board_width && j+1 < board_height)	bl[i][j].addAdjacent(bl[(i+1)][(j+1)]);
-				//printf("9\n");	
-				
-			}
-		} 
-
-		for(int i = 0; i < board_width; i++)
-		{
-			for(int j = 0; j < board_height; j++)
-			{
-				bl[i][j].printAdjacent();
-			}
-		}	
 	}
 
 	// prior to solving a board, configure legal words
@@ -182,48 +38,89 @@ public:
 		// the legal words, alphabetically-sorted
 		const std::vector<std::string> &all_words)
 	{
-		copy(all_words.begin(), all_words.end(), inserter(dict, dict.end()));\
+		dict = all_words;
+	}
+
+	bool checkWord(string word)
+	{
+		for(unsigned int i = 0; i < dict.size(); i++)
+		{
+			if(word.compare(dict[i]) == 0)
+				return true;
+		}
+		return false;
+	}
+
+	void findWord(
+		// the string used to recursively construct potential words
+		string word, 
+		// boggle board
+		const char *board_letters,
+		// used to store words found
+		unordered_set<string> &wordsFound,
+		// a set used to track which indexes of the boggle board have already been used
+		set<int> used, 
+		// current x index
+		int x, 
+		// current y index
+		int y)
+	{
+		used.insert(x * board_height + y);
+		word.push_back(board_letters[x * board_height + y]);
+		
+		if(checkWord(word))
+		{
+			wordsFound.insert(word);
+		}
+
+		for(int i = x-1; i < x+2; i++)
+		{
+			for(int j = y-1; j < y+2; j++)
+			{
+				if(x >= 0 && y >= 0 && x+1 < board_width && y+1 < board_height
+					&& used.find(i * board_height + j) == used.end())
+				{
+					findWord(word, board_letters, wordsFound, used, i, j);
+				}
+			}
+		}
+
+		word.pop_back();
+		used.erase(x * board_height + y);
 	}
 
 	// find all words on the specified board
 	std::vector<std::string> solve_board(
 		// width of the board
-		int board_width,
+		int _board_width,
 		// height of the board
-		int board_height,
+		int _board_height,
 		// board width*height characters in row major order
 		const char *board_letters)
 	{
-		// first checks if boggle board is valid
-		if(board_width <= 0 || board_height <= 0 || 
-			!checkAlpha(board_letters, board_height * board_width))
-		{
-			printf("Boggle board may only contain alphabetical characters\n");
-			return vector<string>();
-		}
+		// initializes private variables
+		board_width = _board_width;
+		board_height = _board_height;
 		
-		// sets up a 2d vector boggle board along with nodes that represent each die on
-		// the boggle board.
-		initializeBoard(board_height, board_width, board_letters);
-
+		// used to store words found
 		unordered_set<string> wordsFound;
-		unordered_set<int> diceUsed;
-		for(unsigned int i = 0; i < bl.size(); i++)
+		// a set used to track which indexes of the boggle board have already been used
+		set<int> used;
+		// sets the initial string
+		string s = "";
+		// starting from each index, recursively find all possible words 
+		for(int i = 0; i < board_width; i++)
 		{
-			for(unsigned int j = 0; j < bl[i].size(); j++)
+			for(int j = 0; j < board_height; j++)
 			{
-				string s = "";
-				bl[i][j].findWord(s, wordsFound, diceUsed, dict);
+				findWord(s, board_letters, wordsFound, used, i, j);
 			}
 		}
-
-		//sort(wordsFound.begin(), wordsFound.end());
-		//for (string s : wordsFound)
-			//cout << s << endl;
-
-
-
-		return vector<string>();
+		
+		for(string s : wordsFound)
+		{
+			cout << s << endl;
+		}
 	}
 };
 
